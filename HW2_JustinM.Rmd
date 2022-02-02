@@ -1,0 +1,94 @@
+---
+title: "HW Week 2"
+author: "Justin Miller"
+output:
+  word_document: default
+  html_notebook: default
+---
+setwd("C:/Users/mille/Desktop/2021 Gibson Jack Data/Metabolism Data")
+```{r}
+getwd()
+setwd("C:/Users/mille/Desktop/2021 Gibson Jack Data/Metabolism Data")
+```
+
+```{r}
+library(ggplot2)
+library(gridExtra)
+library(reshape2)
+library(tidyr)
+library(chron)
+library(dplyr)
+library(zoo)
+library(ggpubr)
+library(readxl)
+library(streamMetabolizer)
+setwd("C:/Users/mille/Desktop/2021 Gibson Jack Data/Metabolism Data")
+UP <- read_excel("UP_1s_May_August2021-10min.xlsx")
+DPB <- read_excel("DPB_1s_May_October.xlsx", na ="NA")
+```
+
+```{r}
+# Checking Columns to see if they look good
+str(UP) # look at structure
+colnames(UP) # column names
+
+# converting LUX into PPFD and manipulating MST_time into solar time
+UP$PPFD <- (UP$Lux/683)/2.35
+
+## Convert date and time from MST (denoted by Etc/GMT+6) to solar time
+posix.time.localtz <- as.POSIXct(UP$MST_time, format="%Y-%m-%d %H:%M", tz='Etc/GMT+6')
+
+
+lubridate::tz(posix.time.localtz)
+#posix.time.localtz
+
+solar.time <- streamMetabolizer::calc_solar_time(posix.time.localtz, longitude=-112.437768)
+
+UP$solar.time <- solar.time
+
+# Same thing for DPB
+DPB$PPFD <- (DPB$Lux/683)/2.35
+
+posix.time.localtz <- as.POSIXct(DPB$MST_time, format="%Y-%m-%d %H:%M", tz='Etc/GMT+6')
+
+lubridate::tz(posix.time.localtz)
+
+solar.time <- streamMetabolizer::calc_solar_time(posix.time.localtz, longitude=-112.437768)
+
+DPB$solar.time <- solar.time
+```
+#3
+```{r}
+#running a loop to load files
+data_folder <- "C:/Users/mille/Desktop/2021 Gibson Jack Data/Metabolism Data/"
+
+Reach_files <- list.files(data_folder, pattern = ".xlsx")
+
+for(i in 1:length(Reach_files)) {
+
+  UP2 <- read_excel(paste0(data_folder, Reach_files[i]), sheet = "UP_1s_May_August2021-10min", col_names = TRUE, na = "NA")
+  DPB2 <- read_excel(paste0(data_folder, Reach_files[i]), sheet = "DPB_1s_May_October.xlsx", col_names = TRUE, na = "NA")
+
+ if(all(colnames(UP2) == colnames(DPB2)) != TRUE) {
+    print(Reach_files[i])
+    print("Error in colnames for DPB") }
+}
+
+##Talk to Derek about why this is not working. Reach_files shows that these files can be seen but when I run my loop it says the sheets cant be found.
+```
+
+
+#4
+```{r}
+UP_filter <- UP %>% filter(DO.obs > 8.5)
+#Filtering the data to only show times when light was greater than 0 AKA daytime hours
+
+```
+
+#5
+```{r}
+ggplot(UP_filter, aes(x= solar.time, y= DO.obs)) + geom_point() + theme_classic() +
+  xlab("time") + ylab("g O2/m^2/d") + ggtitle("DO Observations greater than 8.5 g O2/m^2/d") + theme(plot.title = element_text(hjust = 0.5))
+
+```
+
