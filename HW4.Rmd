@@ -1,0 +1,57 @@
+---
+title: "Env Data Mgmt HW4"
+author: "Justin Miller"
+date: "2/9/2022"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggpmisc)
+library(gginnards)
+library(ggpubr)
+setwd("C:/Users/mille/Desktop/2021 Gibson Jack Data/GJ Field Data")
+UP <- read.csv('GJ_UP_Metabolism_v_FDOM.csv',header=TRUE,sep=",")
+UP$X <- NULL
+
+```
+
+## Correct Time to Posix
+```{r}
+posix.time.localtz <- as.POSIXct(UP$date, format="%m/%d/%Y", tz='Etc/GMT+6')
+
+
+lubridate::tz(posix.time.localtz)
+
+UP$date <- posix.time.localtz
+
+```
+## Plot Gross Primary Production vs Ecosystem Respiration
+```{r, message= F}
+g1 <-ggplot(UP, aes(GPP.daily, ER.daily)) +
+  geom_point(na.rm=TRUE) + xlab(expression(paste( "GPP g*O"[2], "/", "m"^2, "/day)"))) + ylab(expression(paste( "ER g*O"[2], "/", "m"^2, "/day)"))) + geom_smooth(method = "lm") + theme_classic() + ggtitle("GPP v ER") + theme(plot.title = element_text(hjust = 0.5)) +
+stat_poly_eq(aes(label = paste(after_stat(eq.label), after_stat(adj.rr.label), sep = "*\", \"*")), label.x = 1, label.y = 1.00, size = 2)
+
+g1
+
+```
+# Plot fdom vs ER
+```{r}
+g2<- ggplot(UP, aes(x = mean_fdom, y = ER.daily)) +
+  geom_point(na.rm=TRUE) + geom_smooth(method = "lm") + theme_classic() + ggtitle("fDOM  v ER")+ xlab("ppb") + ylab(expression(paste( "ER g*O"[2], "/", "m"^2, "/day)"))) + theme(plot.title = element_text(hjust = 0.5)) + stat_poly_eq(aes(label = paste(after_stat(eq.label), after_stat(adj.rr.label), sep = "*\", \"*")), label.x = 1, label.y = 1.00, size = 2)
+
+g2
+```
+# Plot fDOM vs GPP
+```{r}
+g3 <- ggplot(UP, aes(x = mean_fdom, y = GPP.daily)) + geom_point(na.rm=TRUE)  + geom_smooth(method = "lm") + theme_classic() + ggtitle("fDOM  v Daily GPP")+ xlab("ppb") + ylab(expression(paste( "GPP g*O"[2], "/", "m"^2, "/day)"))) + theme(plot.title = element_text(hjust = 0.5)) + stat_poly_eq(aes(label = paste(after_stat(eq.label), after_stat(adj.rr.label), sep = "*\", \"*")), label.x = 1, label.y = 1.00, size= 2)
+
+g3
+```
+# Put them all together
+```{r}
+png("Rplot.png", width = 480, height = 480, units = "px")
+ggarrange(g1, g2, g3)
+dev.off()
+```
+
